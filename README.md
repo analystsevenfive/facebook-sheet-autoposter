@@ -67,7 +67,16 @@ Task Scheduler เรียกโปรแกรมนี้ซ้ำตาม�
 > [!TIP]
 > ไม่ต้องติดตั้ง Node.js หรือ Google Chrome ไว้ก่อนก็ได้ — สคริปต์ด้านล่างเช็คให้อัตโนมัติ ถ้าไม่มีจะติดตั้งให้เองผ่าน `winget` (อาจมีหน้าต่างขออนุญาต admin ของ Windows โผล่ขึ้นมา ให้กด Yes) ถ้าเครื่องไม่มี `winget` หรือติดตั้งอัตโนมัติไม่สำเร็จ จะบอกลิงก์ให้ไปโหลดเองแทน
 
-**ติดตั้งเครื่องใหม่:** สร้าง ZIP ด้วย `powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1` แล้วส่ง ZIP ให้เครื่องปลายทาง (แพ็กเกจนี้รวม `.env` ปัจจุบัน ซึ่งอาจชี้ไปยังชีตทดสอบหรือเปิดการโพสต์จริง) แตกไฟล์ และดับเบิลคลิก `install.bat` สคริปต์เตรียม Node.js, Chrome, dependencies และไฟล์ตั้งต้นให้ ตรวจ `PUBLISH_ENABLED` ใน `.env` ก่อนใช้ แล้วล็อกอิน Facebook บนเครื่องนั้น จากนั้นใช้ `run.bat` เพื่อเริ่มทำงาน
+**ติดตั้งจาก GitHub โดยไม่ต้องใช้ Git:**
+
+1. ดาวน์โหลด [ไฟล์ ZIP ล่าสุดจาก GitHub](https://github.com/mktteamsevenfive-source/facebook-sheet-autoposter/archive/refs/heads/main.zip) แล้วแตกไฟล์
+2. เปิดโฟลเดอร์ `facebook-sheet-autoposter-main` และดับเบิลคลิก `install.bat` — สคริปต์ติดตั้ง Node.js, Chrome และ dependencies พร้อมสร้าง `.env` และ `accounts.json` จาก template (ปิดการโพสต์จริงไว้เป็นค่าเริ่มต้น)
+3. ขอไฟล์ `google-service-account.json` จากผู้ดูแลเป็นการส่วนตัว แล้ววางที่ `secrets\google-service-account.json` และแก้ `accounts.json` ให้ตรงกับบัญชีบนเครื่องนี้
+4. ทำตามขั้นตอน login Facebook, `npm run check:facebook` และ `npm run dry-run` ด้านล่างก่อนเปิดใช้งานจริง
+
+ใช้ Windows ที่มี `winget` เพื่อให้ติดตั้ง Node.js และ Chrome อัตโนมัติ; ถ้าไม่มี `winget` ให้ติดตั้ง Node.js 20+ และ Chrome ด้วยตนเองก่อนรัน `install.bat` ห้ามอัปโหลด service-account key, `.env`, `accounts.json` หรือโฟลเดอร์ `data\` ขึ้น GitHub
+
+**แบบใช้ PowerShell** (สำหรับคนที่ถนัด command line หรือจะ clone จาก GitHub ตรง ๆ):
 
 **แบบใช้ PowerShell** (สำหรับคนที่ถนัด command line หรือจะ clone จาก GitHub ตรง ๆ):
 
@@ -77,7 +86,7 @@ cd facebook-sheet-autoposter
 powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -ServiceAccountKey "C:\path\to\google-service-account.json"
 ```
 
-`-ServiceAccountKey` ขอไฟล์ key จากคนที่ดูแล Google Cloud project (ดูหัวข้อ "เชื่อม Google" ด้านล่างถ้ายังไม่มี) สคริปต์จะติดตั้ง dependencies, สร้าง `secrets\`, `data\`, `logs\`, `.env`, `accounts.json` และ copy key ไปวางให้อัตโนมัติ ไม่ใส่ `-ServiceAccountKey` ก็ได้ถ้ายังไม่มีไฟล์ตอนนี้ แล้วค่อยวางเองทีหลัง แพ็กเกจรวม `.env` แต่ไม่รวม `accounts.json`, `data\`, `logs\` หรือ key ส่วนตัว
+`-ServiceAccountKey` ขอไฟล์ key จากคนที่ดูแล Google Cloud project (ดูหัวข้อ "เชื่อม Google" ด้านล่างถ้ายังไม่มี) สคริปต์จะติดตั้ง dependencies, สร้าง `secrets\`, `data\`, `logs\`, `.env` จาก `.env.example` และ `accounts.json` จาก template แล้ว copy key ไปวางให้อัตโนมัติ ไม่ใส่ `-ServiceAccountKey` ก็ได้ถ้ายังไม่มีไฟล์ตอนนี้ แล้วค่อยวางเองทีหลัง
 
 ขั้นตอนที่เหลือซึ่ง**ทำอัตโนมัติให้ไม่ได้จริง ๆ** (ข้อจำกัดของ Facebook เอง ต้องนั่งหน้าเครื่องนั้น login เอง):
 

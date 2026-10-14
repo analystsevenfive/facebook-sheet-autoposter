@@ -4,7 +4,7 @@
 
 | # | ขั้นตอน | ใครทำ |
 |---|---|---|
-| 1 | แตกไฟล์ ZIP | คุณ (คลิกเดียว) |
+| 1 | ดาวน์โหลด ZIP จาก GitHub แล้วแตกไฟล์ | คุณ (คลิกเดียว) |
 | 2 | ดับเบิลคลิก `install.bat` | อัตโนมัติ |
 | 3 | แก้ `accounts.json` | คุณ (แก้ไฟล์) |
 | 4 | Login Facebook ทีละบัญชี | คุณ (ทำมือ) |
@@ -20,9 +20,9 @@
 
 ## ขั้นตอน
 
-### 1. แตกไฟล์ ZIP
+### 1. ดาวน์โหลดและแตกไฟล์จาก GitHub
 
-แตก `facebook-sheet-autoposter.zip` ไปที่ไหนก็ได้ในเครื่อง เช่น `Documents\facebook-sheet-autoposter`
+เปิด [ดาวน์โหลด ZIP ล่าสุดจาก GitHub](https://github.com/mktteamsevenfive-source/facebook-sheet-autoposter/archive/refs/heads/main.zip) แล้วแตกไฟล์ไปที่ไหนก็ได้ในเครื่อง เช่น `Documents\facebook-sheet-autoposter-main` ไม่ต้องติดตั้ง Git
 
 ### 2. ดับเบิลคลิก `install.bat`
 
@@ -32,7 +32,7 @@
 - ติดตั้ง Node.js 20+ และ Google Chrome ผ่าน `winget` หากยังไม่มี
 - ติดตั้ง dependencies ตาม lock file
 - สร้างโฟลเดอร์ `secrets\`, `data\`, `logs\`
-- สร้าง `.env` และ `accounts.json` จาก template
+- สร้าง `.env` และ `accounts.json` จาก template (`PUBLISH_ENABLED=false` เป็นค่าเริ่มต้น)
 - Copy `google-service-account.json` (ถ้าวางไว้ข้าง `install.bat`) ไปวางที่ถูกที่ให้อัตโนมัติ
 
 เสร็จแล้วจะพิมพ์ขั้นตอนที่เหลือให้ดู — กด Enter เพื่อปิดหน้าต่าง
@@ -43,7 +43,7 @@
 > [!CAUTION]
 > ไฟล์ `google-service-account.json` เป็นความลับ — ห้ามอัปโหลดขึ้น GitHub หรือที่สาธารณะเด็ดขาด ส่งต่อผ่านช่องทางส่วนตัวเท่านั้น (Line, email, USB)
 
-เมื่อ setup เสร็จ ตรวจ `PUBLISH_ENABLED` ใน `.env` ก่อน (ไฟล์นี้มาจาก ZIP และอาจเปิดการโพสต์จริง) จากนั้นดับเบิลคลิก `run.bat` เพื่อเริ่มหนึ่งรอบ หรือใช้ PowerShell สำหรับขั้นตอน login/dry-run ด้านล่าง
+เมื่อ setup เสร็จ ขอไฟล์ `google-service-account.json` จากผู้ดูแลเป็นการส่วนตัว แล้ววางที่ `secrets\google-service-account.json` ตรวจ `PUBLISH_ENABLED` ใน `.env` ก่อน จากนั้นทำขั้นตอน login และ dry-run ด้านล่างก่อนเปิดการโพสต์จริง
 
 ### 3. แก้ `accounts.json`
 

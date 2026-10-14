@@ -12,7 +12,7 @@ try {
     New-Item -ItemType Directory -Path $stageProjectPath -Force | Out-Null
     $include = @(
         'src', 'scripts', 'package.json', 'package-lock.json', 'README.md', 'INSTALL.md',
-        'install.bat', 'run.bat', '.env', '.env.example', 'accounts.example.json', '.gitignore'
+        'install.bat', 'run.bat', '.env.example', 'accounts.example.json', '.gitignore'
     )
     foreach ($item in $include) {
         $source = Join-Path $projectRoot $item
@@ -30,7 +30,7 @@ try {
     }
     Compress-Archive -Path (Join-Path $stageProjectPath '*') -DestinationPath $outputFullPath -CompressionLevel Optimal
     Write-Host "Created clean installer package: $outputFullPath" -ForegroundColor Green
-    Write-Host 'Included .env settings; excluded account data, browser sessions, logs, dependencies, and secret keys.'
+    Write-Host 'Included only the .env.example template; excluded local settings, account data, browser sessions, logs, dependencies, and secret keys.'
 } finally {
     if (Test-Path -LiteralPath $stagePath) {
         Remove-Item -LiteralPath $stagePath -Recurse -Force
