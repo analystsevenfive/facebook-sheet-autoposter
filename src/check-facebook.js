@@ -1,8 +1,10 @@
 import { loadConfig, readAccountConfig } from './config.js';
 import { checkAccountLogin } from './facebook.js';
+import { parseRunArgs, selectAccounts } from './cli.js';
 
 const config = loadConfig();
-const accounts = readAccountConfig(config);
+const args = parseRunArgs(process.argv.slice(2));
+const accounts = selectAccounts(readAccountConfig(config), args.account);
 
 const seen = new Set();
 const unique = accounts.filter((account) => {

@@ -67,7 +67,7 @@ Task Scheduler เรียกโปรแกรมนี้ซ้ำตาม�
 > [!TIP]
 > ไม่ต้องติดตั้ง Node.js หรือ Google Chrome ไว้ก่อนก็ได้ — สคริปต์ด้านล่างเช็คให้อัตโนมัติ ถ้าไม่มีจะติดตั้งให้เองผ่าน `winget` (อาจมีหน้าต่างขออนุญาต admin ของ Windows โผล่ขึ้นมา ให้กด Yes) ถ้าเครื่องไม่มี `winget` หรือติดตั้งอัตโนมัติไม่สำเร็จ จะบอกลิงก์ให้ไปโหลดเองแทน
 
-**แบบไม่ต้องใช้ command line เลย** (เหมาะกับเครื่องเพื่อนร่วมทีมที่ไม่ถนัดสาย technical): แตกไฟล์ ZIP ของโปรเจกต์ วางไฟล์ `google-service-account.json` ไว้ในโฟลเดอร์เดียวกับ `install.bat` (ไม่ใส่ก็ได้ ค่อยวางทีหลัง) แล้ว**ดับเบิลคลิก `install.bat`** — จบ ติดตั้งให้ทั้งหมดอัตโนมัติเหมือนคำสั่งด้านล่าง
+**ติดตั้งเครื่องใหม่:** สร้าง ZIP ด้วย `powershell -ExecutionPolicy Bypass -File .\scripts\package.ps1` แล้วส่ง ZIP ให้เครื่องปลายทาง (แพ็กเกจนี้รวม `.env` ปัจจุบัน ซึ่งอาจชี้ไปยังชีตทดสอบหรือเปิดการโพสต์จริง) แตกไฟล์ และดับเบิลคลิก `install.bat` สคริปต์เตรียม Node.js, Chrome, dependencies และไฟล์ตั้งต้นให้ ตรวจ `PUBLISH_ENABLED` ใน `.env` ก่อนใช้ แล้วล็อกอิน Facebook บนเครื่องนั้น จากนั้นใช้ `run.bat` เพื่อเริ่มทำงาน
 
 **แบบใช้ PowerShell** (สำหรับคนที่ถนัด command line หรือจะ clone จาก GitHub ตรง ๆ):
 
@@ -77,7 +77,7 @@ cd facebook-sheet-autoposter
 powershell -ExecutionPolicy Bypass -File .\scripts\setup.ps1 -ServiceAccountKey "C:\path\to\google-service-account.json"
 ```
 
-`-ServiceAccountKey` ขอไฟล์ key จากคนที่ดูแล Google Cloud project (ดูหัวข้อ "เชื่อม Google" ด้านล่างถ้ายังไม่มี) สคริปต์จะติดตั้ง dependencies, สร้าง `secrets\`, `data\`, `logs\`, `.env`, `accounts.json` และ copy key ไปวางให้อัตโนมัติ ไม่ใส่ `-ServiceAccountKey` ก็ได้ถ้ายังไม่มีไฟล์ตอนนี้ แล้วค่อยวางเองทีหลัง
+`-ServiceAccountKey` ขอไฟล์ key จากคนที่ดูแล Google Cloud project (ดูหัวข้อ "เชื่อม Google" ด้านล่างถ้ายังไม่มี) สคริปต์จะติดตั้ง dependencies, สร้าง `secrets\`, `data\`, `logs\`, `.env`, `accounts.json` และ copy key ไปวางให้อัตโนมัติ ไม่ใส่ `-ServiceAccountKey` ก็ได้ถ้ายังไม่มีไฟล์ตอนนี้ แล้วค่อยวางเองทีหลัง แพ็กเกจรวม `.env` แต่ไม่รวม `accounts.json`, `data\`, `logs\` หรือ key ส่วนตัว
 
 ขั้นตอนที่เหลือซึ่ง**ทำอัตโนมัติให้ไม่ได้จริง ๆ** (ข้อจำกัดของ Facebook เอง ต้องนั่งหน้าเครื่องนั้น login เอง):
 
@@ -184,6 +184,15 @@ npm run start:all
 ```
 
 ยังคง**โพสต์ทีละแถวเหมือนเดิมทุกอย่าง** (เลือก 1 แถว → โพสต์ → บันทึกผล → ค่อยไปแถวถัดไป) แค่ไม่ต้องรันคำสั่งซ้ำเอง จะไล่โพสต์จนกว่าจะไม่มีแถวไหนเข้าเกณฑ์แล้วถึงหยุด
+
+ถ้าต้องการทดสอบโดยให้หน้าต่าง Chrome แสดงบนจอ ใช้คำสั่งนี้แทน โดยสามารถเลือกบัญชีเดียวได้ด้วย `--account`:
+
+```powershell
+npm run start:all:popup
+npm run start:all:popup -- --account "Nirada Lyn"
+```
+
+คำสั่งนี้ใช้การตั้งค่าเผยแพร่จริงเหมือน `start:all` ทุกประการ; ถ้า `PUBLISH_ENABLED=true` และมีแถวที่เข้าเกณฑ์ ระบบอาจโพสต์จริงได้
 
 ## 6. ตั้งเวลา
 

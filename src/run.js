@@ -1,52 +1,23 @@
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { loadConfig, readAccountConfig } from './config.js';
 import { getGoogleClients } from './google.js';
 import { eligibilityReason, selectOldestEligible } from './eligibility.js';
 import { formatDurationCell, readRow, readTable, updateRow } from './sheet.js';
 import { ensureMedia } from './media.js';
-import { createFacebookSession, prepareFacebookPost, resolvePostedUrl } from './facebook.js';
+import { createFacebookSession, prepareFacebookPost } from './facebook.js';
 import { displayTimestamp, sheetTimestamp } from './time.js';
+import { normalizeAccountName, parseRunArgs, selectAccounts } from './cli.js';
+import { acquireLock } from './run-lock.js';
 
 const MAX_ROWS_PER_RUN = 2000; // safety cap for --all, not a realistic daily volume
 const PENDING_PERMALINK = 'Posted — permalink lookup pending';
-const PERMALINK_NOT_FOUND = 'Posted — permalink not found, check manually';
 
 function log(event, details = {}) {
   console.log(JSON.stringify({ at: new Date().toISOString(), event, ...details }));
 }
 
-function processIsRunning(pid) {
-  if (!Number.isInteger(pid) || pid <= 0) return false;
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return error.code === 'EPERM';
-  }
-}
-
-async function acquireLock(dataDir) {
-  await fs.mkdir(dataDir, { recursive: true });
-  const lockPath = path.join(dataDir, 'run.lock');
-  let handle;
-  try {
-    handle = await fs.open(lockPath, 'wx');
-    await handle.writeFile(`${process.pid}\n${new Date().toISOString()}\n`);
-  } catch (error) {
-    if (error.code === 'EEXIST') {
-      const contents = await fs.readFile(lockPath, 'utf8').catch(() => '');
-      const lockPid = Number.parseInt(contents.split(/\r?\n/, 1)[0], 10);
-      if (processIsRunning(lockPid)) throw new Error(`Another run is active (${lockPath}).`);
-      await fs.unlink(lockPath).catch(() => {});
-      return acquireLock(dataDir);
-    }
-    throw error;
-  }
-  return async () => {
-    await handle.close().catch(() => {});
-    await fs.unlink(lockPath).catch(() => {});
-  };
+function pendingContentUrl(groupUrl) {
+  const groupId = String(groupUrl || '').match(/\/groups\/([^/?#]+)/)?.[1];
+  return groupId ? `https://www.facebook.com/groups/${encodeURIComponent(groupId)}/my_pending_content` : '';
 }
 
 function replaceRow(rows, row) {
@@ -152,7 +123,8 @@ async function processRow({ config, live, accounts, knownAccounts, sheets, drive
         'Attempt Count': attempts + 1,
         'Last Attempt At': '',
         'Posted At': postedAt,
-        'Posted URL': pendingLookup ? PENDING_PERMALINK : 'Submitted for review — Facebook did not provide a post URL',
+        'Posted URL': pendingLookup ? PENDING_PERMALINK : pendingContentUrl(selected['Facebook Group URL']),
+        'status post': pendingLookup ? '' : 'รออนุมัติจากแอดมิน',
         'Error / Notes': ''
       }
     });
@@ -179,6 +151,7 @@ async function processRow({ config, live, accounts, knownAccounts, sheets, drive
         'Last Attempt At': '',
         'Posted At': now,
         'Posted URL': 'Submission started — outcome/URL requires manual review',
+        'status post': 'ตรวจสอบผลการเผยแพร่',
         'Error / Notes': `Manual review required after submission started: ${error.message}`
       } : {
         'Posting Status': 'Failed',
@@ -196,36 +169,11 @@ async function processRow({ config, live, accounts, knownAccounts, sheets, drive
   }
 }
 
-// Second pass, run once every row has been posted: revisits each group page to look up
-// the permalink Facebook didn't hand back at post time, so this lookup never delays
-// posting the next row.
-async function resolvePendingPermalinks({ config, accounts, sheets, headers, pending, getFacebookSession }) {
-  for (const item of pending) {
-    const account = accounts.find((entry) => entry.sheetAccount.trim().toLowerCase() === String(item.accountName).trim().toLowerCase());
-    if (!account) {
-      log('permalink-resolve-skipped', { row: item.rowNumber, postId: item.postId, reason: 'no account mapping' });
-      continue;
-    }
-    try {
-      const session = await getFacebookSession(account);
-      const { ok, url, error } = await resolvePostedUrl({ config, account, row: { 'Facebook Group URL': item.groupUrl, Caption: item.caption }, session });
-      if (ok && url) {
-        await updateRow(sheets, config, headers, item.rowNumber, { 'Posted URL': url });
-        log('permalink-resolved', { row: item.rowNumber, postId: item.postId, url });
-      } else {
-        await updateRow(sheets, config, headers, item.rowNumber, { 'Posted URL': PERMALINK_NOT_FOUND });
-        log('permalink-not-found', { row: item.rowNumber, postId: item.postId, message: error?.message });
-      }
-    } catch (error) {
-      log('permalink-resolve-failed', { row: item.rowNumber, postId: item.postId, message: error.message });
-    }
-  }
-}
-
 async function main() {
   const config = loadConfig();
-  const commandDryRun = process.argv.includes('--dry-run');
-  const processAll = process.argv.includes('--all');
+  const args = parseRunArgs(process.argv.slice(2));
+  const commandDryRun = args.dryRun;
+  const processAll = args.all;
   const live = config.publishEnabled && !commandDryRun;
   const releaseLock = await acquireLock(config.dataDir);
   const facebookSessions = new Map();
@@ -244,7 +192,12 @@ async function main() {
   let hadFailure = false;
   try {
     const accounts = readAccountConfig(config);
-    const knownAccounts = new Set(accounts.map((item) => item.sheetAccount.trim().toLowerCase()));
+    const activeAccounts = selectAccounts(accounts, args.account);
+    const knownAccounts = new Set(activeAccounts.map((item) => normalizeAccountName(item.sheetAccount)));
+    log('account-scope', {
+      account: args.account || 'all',
+      activeAccounts: activeAccounts.map((item) => item.sheetAccount)
+    });
     const { sheets, drive } = await getGoogleClients(config);
     // Dry-run never writes to the Sheet, so re-selecting would return the same row forever;
     // track what --all has already shown so each pass moves on to the next one.
@@ -273,7 +226,7 @@ async function main() {
       }
 
       const currentTable = { headers, rows: remainingRows };
-      const outcome = await processRow({ config, live, accounts, knownAccounts, sheets, drive, headers, table: currentTable, selected, excludedPostIds, pendingPermalinks, getFacebookSession, mediaCache });
+      const outcome = await processRow({ config, live, accounts: activeAccounts, knownAccounts, sheets, drive, headers, table: currentTable, selected, excludedPostIds, pendingPermalinks, getFacebookSession, mediaCache });
       remainingRows = remainingRows.filter((row) => row.__rowNumber !== selected.__rowNumber);
       if (outcome === 'posted') processedCount += 1;
       if (outcome === 'failed') hadFailure = true;
@@ -287,9 +240,7 @@ async function main() {
     if (processAll) log('batch-complete', { processed: processedCount });
 
     if (live && pendingPermalinks.length) {
-      log('permalink-lookup-start', { count: pendingPermalinks.length });
-      await resolvePendingPermalinks({ config, accounts, sheets, headers, pending: pendingPermalinks, getFacebookSession });
-      log('permalink-lookup-complete', { count: pendingPermalinks.length });
+      log('permalink-lookup-deferred', { count: pendingPermalinks.length, command: 'npm run resolve:links' });
     }
   } catch (error) {
     log('run-failed', { message: error.message, stack: error.stack });

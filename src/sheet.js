@@ -1,7 +1,7 @@
 const REQUIRED_HEADERS = [
   'Post ID', 'Assigned Member', 'Facebook Account', 'Facebook Group Name', 'Facebook Group URL',
   'Caption', 'Media Type', 'Media URL 1', 'Scheduled Date', 'Approval Status',
-  'Posting Status', 'Attempt Count', 'Last Attempt At', 'Posted At', 'Posted URL', 'Error / Notes',
+  'Posting Status', 'Attempt Count', 'Last Attempt At', 'Posted At', 'Posted URL', 'status post', 'Error / Notes',
   'time use', 'Local Media Path'
 ];
 
@@ -32,7 +32,7 @@ export function rowsFromValues(values) {
 export async function readTable(sheets, config) {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: config.spreadsheetId,
-    range: `'${config.sheetName.replaceAll("'", "''")}'!A1:S${config.maxRows}`,
+    range: `'${config.sheetName.replaceAll("'", "''")}'!A1:Z${config.maxRows}`,
     valueRenderOption: 'FORMATTED_VALUE',
     dateTimeRenderOption: 'FORMATTED_STRING'
   });
@@ -42,7 +42,7 @@ export async function readTable(sheets, config) {
 export async function readRow(sheets, config, headers, rowNumber) {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: config.spreadsheetId,
-    range: `'${config.sheetName.replaceAll("'", "''")}'!A${rowNumber}:S${rowNumber}`,
+    range: `'${config.sheetName.replaceAll("'", "''")}'!A${rowNumber}:Z${rowNumber}`,
     valueRenderOption: 'FORMATTED_VALUE',
     dateTimeRenderOption: 'FORMATTED_STRING'
   });

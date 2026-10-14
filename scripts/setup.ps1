@@ -65,8 +65,8 @@ if (Find-Chrome) {
 Set-Location -LiteralPath $projectRoot
 
 Write-Host "`nInstalling npm dependencies..."
-npm install
-if ($LASTEXITCODE -ne 0) { throw "npm install failed." }
+npm ci
+if ($LASTEXITCODE -ne 0) { throw "npm ci failed. Check your network connection, then run install.bat again." }
 
 foreach ($dir in @('secrets', 'data', 'logs')) {
     $path = Join-Path $projectRoot $dir
@@ -106,6 +106,7 @@ if ($ServiceAccountKey) {
 }
 
 Write-Host "`n== Setup finished. Remaining steps (must be done by hand on this machine): ==" -ForegroundColor Cyan
+Write-Host "Double-click run.bat any time to start the poster. Check PUBLISH_ENABLED in .env before the first run."
 if ($haveServiceAccountKey) {
     Write-Host "1. Edit accounts.json to match this machine's Facebook accounts"
     Write-Host '2. Run: npm run login:facebook -- "<Facebook display name>" for each account'

@@ -7,11 +7,13 @@
   "scripts": {
     "start": "node src/run.js",
     "start:all": "node src/run.js --all",
+    "start:all:popup": "node src/run.js --all --popup",
     "dry-run": "node src/run.js --dry-run",
     "dry-run:all": "node src/run.js --dry-run --all",
     "login:google": "node src/login-google.js",
     "login:facebook": "node src/login-facebook.js",
     "check:facebook": "node src/check-facebook.js",
+    "resolve:links": "node src/resolve-links.js",
     "split-groups": "node src/split-groups.js",
     "classify-groups": "node src/classify-groups.js",
     "test": "node --test"
